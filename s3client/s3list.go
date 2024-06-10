@@ -16,7 +16,7 @@ type S3Object struct {
 }
 
 // ListBucketObjects lists all objects in the specified S3 bucket
-func ListBucketObjects(svc *s3.S3, bucket, customEndpoint string) ([]S3Object, error) {
+func ListBucketObjects(svc *s3.S3, bucket string) ([]S3Object, error) {
     input := &s3.ListObjectsV2Input{
         Bucket: aws.String(bucket),
     }
@@ -29,7 +29,7 @@ func ListBucketObjects(svc *s3.S3, bucket, customEndpoint string) ([]S3Object, e
     var objects []S3Object
 
     for _, item := range result.Contents {
-        url := ConstructObjectURL(customEndpoint, bucket, *item.Key)
+        url := ConstructObjectURL(*item.Key)
         obj := S3Object{
             Name:         *item.Key,
             Size:         *item.Size,
@@ -43,6 +43,6 @@ func ListBucketObjects(svc *s3.S3, bucket, customEndpoint string) ([]S3Object, e
 }
 
 // ConstructObjectURL constructs the URL for an S3 object given the endpoint, bucket, and object key
-func ConstructObjectURL(customEndpoint, bucket, key string) string {
-    return fmt.Sprintf("%s/%s/%s", customEndpoint, bucket, key)
+func ConstructObjectURL(key string) string {
+    return fmt.Sprintf("https://imgassets.datenshi.pw/%s", key)
 }
