@@ -1,11 +1,14 @@
 package main
 
 import (
-	"go-upchi/config"
-	"go-upchi/s3client"
-	"log"
+    "fmt"
+    "log"
+    "time"
 
-	"github.com/gofiber/fiber/v2"
+    "go-upchi/config"
+    "go-upchi/s3client"
+
+    "github.com/gofiber/fiber/v2"
 )
 
 func main() {
@@ -15,19 +18,21 @@ func main() {
     // Retrieve the environment variables
     accessKeyID := config.GetEnv("AWS_ACCESS_KEY_ID")
     secretAccessKey := config.GetEnv("AWS_SECRET_ACCESS_KEY")
-    region := config.GetEnv("AWS_REGION")
     bucket := config.GetEnv("S3_BUCKET")
-    customEndpoint := config.GetEnv("S3_ENDPOINT")
+    accountId := config.GetEnv("ACCOUNT_ID")
 
-    // Create a new S3 session
-    svc := s3client.CreateS3Session(accessKeyID, secretAccessKey, region, customEndpoint)
+    // Create a new S3 client
+    client, err := s3client.CreateS3Client(accessKeyID, secretAccessKey, accountId)
+    if err != nil {
+        log.Fatalf("Failed to create S3 client: %v", err)
+    }
 
-    // Fiber instance
+    // Initialize Fiber app
     app := fiber.New()
 
-    // Route
+    // Define a route to list S3 bucket objects
     app.Get("/list", func(c *fiber.Ctx) error {
-        objects, err := s3client.ListBucketObjects(svc, bucket)
+        objects, err := s3client.ListBucketObjects(client, bucket, fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId))
         if err != nil {
             return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
                 "error": err.Error(),
@@ -36,7 +41,7 @@ func main() {
         return c.JSON(objects)
     })
 
-    // Define a route to upload files to S3
+    // Define a route to generate presigned URLs for uploading files
     app.Post("/upload", func(c *fiber.Ctx) error {
         // Get the uploaded file
         file, err := c.FormFile("file")
@@ -46,19 +51,10 @@ func main() {
             })
         }
 
-        // Open the uploaded file
-        src, err := file.Open()
-        if err != nil {
-            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-                "error": "Failed to open file",
-            })
-        }
+        fileName := file.Filename
 
-        // Define the S3 object key (you can modify this as needed)
-        key := file.Filename
-
-        // Upload the file to S3
-        err = s3client.UploadFile(svc, bucket, key, src, file)
+        // Generate a presigned URL for the file upload
+        presignedURL, err := s3client.GeneratePresignedURL(client, bucket, fileName, 1*time.Minute)
         if err != nil {
             return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
                 "error": err.Error(),
@@ -66,11 +62,11 @@ func main() {
         }
 
         return c.JSON(fiber.Map{
-            "message": "File uploaded successfully",
-            "file_url": s3client.ConstructObjectURL(key),
+            "presigned_url": presignedURL,
+            "file_url": s3client.ConstructObjectURL(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId), bucket, fileName),
         })
     })
 
     // Listen on port 3000
-    log.Fatal(app.Listen("0.0.0.0:3000"))
+    log.Fatal(app.Listen(":3000"))
 }

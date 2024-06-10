@@ -1,10 +1,12 @@
 package s3client
 
 import (
+    "context"
     "fmt"
     "time"
-	"github.com/aws/aws-sdk-go/aws"
-    "github.com/aws/aws-sdk-go/service/s3"
+
+    "github.com/aws/aws-sdk-go-v2/aws"
+    "github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 // S3Object holds information about an object stored in S3
@@ -16,23 +18,22 @@ type S3Object struct {
 }
 
 // ListBucketObjects lists all objects in the specified S3 bucket
-func ListBucketObjects(svc *s3.S3, bucket string) ([]S3Object, error) {
+func ListBucketObjects(client *s3.Client, bucket, customEndpoint string) ([]S3Object, error) {
     input := &s3.ListObjectsV2Input{
         Bucket: aws.String(bucket),
     }
 
-    result, err := svc.ListObjectsV2(input)
+    result, err := client.ListObjectsV2(context.TODO(), input)
     if err != nil {
         return nil, fmt.Errorf("unable to list items in bucket %q, %v", bucket, err)
     }
 
     var objects []S3Object
-
     for _, item := range result.Contents {
-        url := ConstructObjectURL(*item.Key)
+        url := ConstructObjectURL(customEndpoint, bucket, *item.Key)
         obj := S3Object{
             Name:         *item.Key,
-            Size:         *item.Size,
+            Size:         aws.ToInt64(item.Size), // Use aws.ToInt64 to safely dereference the pointer
             LastModified: *item.LastModified,
             URL:          url,
         }
@@ -43,6 +44,6 @@ func ListBucketObjects(svc *s3.S3, bucket string) ([]S3Object, error) {
 }
 
 // ConstructObjectURL constructs the URL for an S3 object given the endpoint, bucket, and object key
-func ConstructObjectURL(key string) string {
-    return fmt.Sprintf("https://imgassets.datenshi.pw/%s", key)
+func ConstructObjectURL(customEndpoint, bucket, key string) string {
+    return fmt.Sprintf("%s/%s/%s", customEndpoint, bucket, key)
 }
