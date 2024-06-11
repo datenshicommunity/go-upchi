@@ -1,34 +1,43 @@
 package s3client
 
 import (
-    "context"
-    "fmt"
+	"context"
+	"log"
+    "os"
 
-    "github.com/aws/aws-sdk-go-v2/aws"
-    "github.com/aws/aws-sdk-go-v2/config"
-    "github.com/aws/aws-sdk-go-v2/credentials"
-    "github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+
+	configlokal "go-upchi/config" // configlokal is used to load environment variables
 )
 
-// CreateS3Client initializes an S3 client using the provided credentials and custom endpoint
-func CreateS3Client(accessKeyID, secretAccessKey, accountId string) (*s3.Client, error) {
-    r2Resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-        if service == s3.ServiceID {
-            return aws.Endpoint{
-                URL: fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId),
-            }, nil
-        }
-        return aws.Endpoint{}, fmt.Errorf("unknown endpoint requested")
-    })
+var s3client *s3.Client
 
-    cfg, err := config.LoadDefaultConfig(context.TODO(),
+func init() {
+	// Load environment variables
+	configlokal.LoadEnv()
+
+	r2Resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		return aws.Endpoint{
+			URL: os.Getenv("S3_ENDPOINT_URL"),
+		}, nil
+	})
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithEndpointResolverWithOptions(r2Resolver),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(os.Getenv("S3_ACCESS_KEY"), os.Getenv("S3_SECRET_KEY"), "")),
         config.WithRegion("auto"),
-        config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
-        config.WithEndpointResolverWithOptions(r2Resolver),
-    )
-    if err != nil {
-        return nil, fmt.Errorf("failed to create S3 client: %v", err)
-    }
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    return s3.NewFromConfig(cfg), nil
+	s3client = s3.NewFromConfig(cfg)
+}
+
+// GetS3Client returns the initialized S3 client
+func GetS3Client() *s3.Client {
+	return s3client
 }

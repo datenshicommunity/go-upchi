@@ -1,33 +1,53 @@
 package s3client
 
 import (
-    "context"
-    "fmt"
-    "mime/multipart"
+	"context"
+	"fmt"
+	"mime/multipart"
+	"os"
+	"time"
 
-    "github.com/aws/aws-sdk-go-v2/aws"
-    "github.com/aws/aws-sdk-go-v2/service/s3"
-    "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
+// PutObject uploads a file to the specified S3 bucket
+func PutObject(ctx context.Context, input *s3.PutObjectInput) (*s3.PutObjectOutput, error) {
+	client := GetS3Client() // Get the initialized S3 client
+
+	// Upload the file to S3
+	resp, err := client.PutObject(ctx, input)
+	if err != nil {
+		return nil, fmt.Errorf("unable to upload file to bucket %q, %v", *input.Bucket, err)
+	}
+
+	return resp, nil
+}
+
 // UploadFile uploads a file to the specified S3 bucket
-func UploadFile(client *s3.Client, bucket, key string, file multipart.File, fileHeader *multipart.FileHeader) error {
-    defer file.Close()
+func UploadFile(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader) (string, error) {
+	defer file.Close()
 
-    uploader := manager.NewUploader(client)
-    input := &s3.PutObjectInput{
-        Bucket:        aws.String(bucket),
-        Key:           aws.String(key),
-        Body:          file,
-        ContentLength: aws.Int64(fileHeader.Size),
-        ContentType:   aws.String(fileHeader.Header.Get("Content-Type")),
-    }
+	fileID, err := gonanoid.Generate("abcdefghijklmnopqrstuvwxyz1234567890", 6)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate file ID: %v", err)
+	}
 
-    // Upload the file to S3
-    _, err := uploader.Upload(context.TODO(), input)
-    if err != nil {
-        return fmt.Errorf("unable to upload file to bucket %q, %v", bucket, err)
-    }
+	expAt := time.Now().Add(time.Hour * 1)
 
-    return nil
+	key := fmt.Sprintf("tmp/%s", fileID)
+	_, err = PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(os.Getenv("S3_BUCKET_NAME")),
+		Key:         aws.String(key),
+		Body:        file,
+		Metadata:    map[string]string{"file_name": fileHeader.Filename},
+		Expires:     aws.Time(expAt),
+		ContentType: aws.String(fileHeader.Header.Get("Content-Type")),
+	})
+	if err != nil {
+		return "", fmt.Errorf("unable to upload file to S3: %v", err)
+	}
+
+	return key, nil
 }
