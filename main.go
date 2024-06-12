@@ -29,8 +29,8 @@ func main() {
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
-        Views: engine,
-    })
+		Views: engine,
+	})
 
 	app.Use("/assets", filesystem.New(filesystem.Config{
 		Root: http.FS(embedDirStatic),
@@ -39,11 +39,11 @@ func main() {
 	}))
 
 	app.Get("/", func(c *fiber.Ctx) error {
-        // Render index template
-        return c.Render("views/index", fiber.Map{
-            "Title": "Go Upchi - Temporary file uploader",
-        })
-    })
+		// Render index template
+		return c.Render("views/index", fiber.Map{
+			"Title": "Go Upchi - Temporary file uploader",
+		})
+	})
 
 	// Define a route to upload a file to S3
 	app.Post("/upload", func(c *fiber.Ctx) error {
@@ -81,8 +81,8 @@ func main() {
 		})
 	})
 
-    // Route for downloading the file using ID
-    app.Get("/:file_id", s3client.DownloadFileByID)
+	// Route for downloading the file using ID
+	app.Get("/:file_id", s3client.DownloadFileByID)
 
 	// Listen on port 3000
 	log.Fatal(app.Listen(":3000"))
