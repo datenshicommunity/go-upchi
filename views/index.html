@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <title>{{.Title}}</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        .upload-container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #007BFF; /* Blue color */
+            margin-bottom: 20px;
+        }
+
+        .upload-box {
+            border: 2px dashed #007BFF; /* Blue color */
+            border-radius: 10px;
+            padding: 40px;
+            background-color: #e6f2ff; /* Light blue background */
+            display: inline-block;
+            width: 300px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .upload-icon {
+            color: #007BFF; /* Blue color */
+            margin-bottom: 20px;
+        }
+
+        .upload-box p {
+            margin: 10px 0;
+            color: #666;
+        }
+
+        .browse-btn {
+            background-color: #007BFF; /* Blue color */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .browse-btn:hover {
+            background-color: #0056b3; /* Darker blue */
+        }
+
+        .file-size-info {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        #fileList {
+            margin-top: 20px;
+            text-align: center;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+        }
+
+        .file-item {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            word-break: break-word;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cancel-btn {
+            background: none;
+            border: none;
+            color: red;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0 10px;
+        }
+
+        .upload-btn {
+            background-color: #28a745; /* Green color */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            display: none; /* Initially hidden */
+        }
+
+        .upload-btn:hover {
+            background-color: #218838; /* Darker green */
+        }
+
+        /* Centering the upload button */
+        .upload-btn-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        /* Style for the URL box */
+        .url-box {
+            border: 2px solid #007BFF;
+            border-radius: 10px;
+            padding: 20px;
+            background-color: #e6f2ff;
+            margin-top: 20px;
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .copy-btn {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .copy-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <h2>Go-Upchi</h2>
+        <h2>Temporary File Uploader</h2>
+        <div class="upload-box" id="uploadBox">
+            <input type="file" id="fileInput" style="display: none;">
+            <i class="upload-icon fas fa-cloud-upload-alt fa-3x"></i>
+            <p>Drag & drop your file(s) here to upload</p>
+            <p>or</p>
+            <button type="button" class="browse-btn" id="browseBtn">Browse Computer</button>
+            <p class="file-size-info">Max file size: 5MB</p>
+            <div id="fileList"></div>
+        </div>
+        <div class="upload-btn-container">
+            <button type="button" class="upload-btn" id="uploadBtn">Upload File</button>
+        </div>
+        <div id="uploadResult"></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const uploadBox = document.getElementById('uploadBox');
+            const fileInput = document.getElementById('fileInput');
+            const browseBtn = document.getElementById('browseBtn');
+            const fileList = document.getElementById('fileList');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadResult = document.getElementById('uploadResult');
+            let currentFile = null; // To store the selected file
+
+            // Handle drag and drop
+            uploadBox.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                uploadBox.classList.add('dragover');
+            });
+
+            uploadBox.addEventListener('dragleave', () => {
+                uploadBox.classList.remove('dragover');
+            });
+
+            uploadBox.addEventListener('drop', (event) => {
+                event.preventDefault();
+                uploadBox.classList.remove('dragover');
+                const files = event.dataTransfer.files;
+                handleFile(files[0]); // Only handle the first file
+            });
+
+            // Handle file input click
+            browseBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // Handle file selection via file input
+            fileInput.addEventListener('change', (event) => {
+                const files = event.target.files;
+                handleFile(files[0]); // Only handle the first file
+            });
+
+            // Function to handle and display the file
+            function handleFile(file) {
+                // Clear the current list
+                fileList.innerHTML = '';
+                currentFile = file; // Store the file for upload
+
+                // Create a new file item and add it to the list
+                if (file) {
+                    const fileItem = document.createElement('div');
+                    fileItem.classList.add('file-item');
+                    fileItem.textContent = `${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+
+                    // Add cancel button to the file item
+                    const cancelButton = document.createElement('button');
+                    cancelButton.classList.add('cancel-btn');
+                    cancelButton.innerHTML = '&times;'; // X symbol
+                    cancelButton.onclick = () => {
+                        fileList.removeChild(fileItem);
+                        uploadBtn.style.display = 'none';
+                        currentFile = null;
+                        fileInput.value = ''; // Reset the file input
+                    };
+
+                    fileItem.appendChild(cancelButton);
+                    fileList.appendChild(fileItem);
+
+                    uploadBtn.style.display = 'block'; // Show the upload button
+                } else {
+                    // If no file is selected, show a message (optional)
+                    const noFileItem = document.createElement('div');
+                    noFileItem.classList.add('file-item');
+                    noFileItem.textContent = 'No file selected';
+                    fileList.appendChild(noFileItem);
+                    uploadBtn.style.display = 'none'; // Hide the upload button
+                }
+            }
+
+            // Function to handle file upload
+            uploadBtn.addEventListener('click', () => {
+                if (currentFile) {
+                    uploadFile(currentFile);
+                }
+            });
+
+            function uploadFile(file) {
+                // Create a FormData object to hold the file
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // Simulate an upload process using fetch (replace with your actual upload logic)
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.url) {
+                        showUploadResult(data);
+                    } else {
+                        alert('File uploaded successfully, but no URL provided.');
+                    }
+                    resetUpload();
+                })
+                .catch((error) => {
+                    alert('Error uploading file.');
+                    console.error('Error:', error);
+                    resetUpload();
+                });
+            }
+
+            // Function to reset the upload process
+            function resetUpload() {
+                fileList.innerHTML = '';
+                uploadBtn.style.display = 'none';
+                currentFile = null;
+                fileInput.value = ''; // Reset the file input
+            }
+
+            // Function to show upload result
+            function showUploadResult(data) {
+                uploadResult.innerHTML = '';
+
+                const urlBox = document.createElement('div');
+                urlBox.classList.add('url-box');
+
+                // Create the anchor element
+                const link = document.createElement('a');
+                link.href = `http://localhost:3000/${data.url}`; // Set the href attribute
+                link.textContent = `http://localhost:3000/${data.url}`; // Set the text content
+
+                // Append the anchor element to the urlBox div
+                urlBox.appendChild(link);
+
+                // Append the urlBox div to the uploadResult element
+                uploadResult.appendChild(urlBox);
+            }
+        });
+    </script>
+</body>
+</html>

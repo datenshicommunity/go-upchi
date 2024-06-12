@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f9f9f9;
+}
+
+.container {
+    text-align: center;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.message-box h1 {
+    font-size: 2em;
+    margin-bottom: 10px;
+}
+
+.message-box p {
+    font-size: 1em;
+    color: #666;
+}
+
+.image-box {
+    margin-top: 20px;
+}
+
+.image-box img {
+    max-width: 100%;
+    height: auto;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="message-box">
+            <h1>Oops</h1>
+            <p>Unfortunately, the file you find is not available or might be deleted, please upload again</p>
+        </div>
+        <div class="image-box">
+            <img height="200" width="200" src="assets/computer.jpg" alt="Computer and person illustration">
+        </div>
+    </div>
+</body>
+</html>

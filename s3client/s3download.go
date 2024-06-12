@@ -21,10 +21,13 @@ func DownloadFileByID(c *fiber.Ctx) error {
 
 	obj, err := s3client.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(os.Getenv("S3_BUCKET_NAME")),
-		Key:    aws.String("tmp/" + fileID),
+		Key:    aws.String(fileID),
 	})
 	if err != nil {
-		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+		return c.Render("views/404", fiber.Map{
+			"Title": "404 Not Found",
+		})
+		//return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	// Read the file content
@@ -45,7 +48,7 @@ func DownloadFileByID(c *fiber.Ctx) error {
 	// Delete the object from S3
 	_, delErr := s3client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
 		Bucket: aws.String(os.Getenv("S3_BUCKET_NAME")),
-		Key:    aws.String("tmp/" + fileID),
+		Key:    aws.String(fileID),
 	})
 	if delErr != nil {
 		// Log the error, but continue since the file was successfully downloaded

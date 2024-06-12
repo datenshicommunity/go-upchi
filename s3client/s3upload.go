@@ -29,14 +29,14 @@ func PutObject(ctx context.Context, input *s3.PutObjectInput) (*s3.PutObjectOutp
 func UploadFile(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader) (string, error) {
 	defer file.Close()
 
-	fileID, err := gonanoid.Generate("abcdefghijklmnopqrstuvwxyz1234567890", 6)
+	fileID, err := gonanoid.Generate("abcdefghijklmnopqrstuvwxyz1234567890", 12)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate file ID: %v", err)
 	}
 
 	expAt := time.Now().Add(time.Hour * 1)
 
-	key := fmt.Sprintf("tmp/%s", fileID)
+	key := fmt.Sprint(fileID)
 	_, err = PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(os.Getenv("S3_BUCKET_NAME")),
 		Key:         aws.String(key),
