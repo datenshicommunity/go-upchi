@@ -3,7 +3,8 @@
 Go-Upchi is a lightweight and secure file-sharing solution built in Golang, designed specifically for internal network. It will be secure to share without any problem into your teams.
 
 ## Demo
-<iframe width="560" height="315" src="https://www.youtube.com/embed/_O6Bv45z08g?si=SU3C39zHZsEEZYdX" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+[![Demo](https://img.youtube.com/vi/_O6Bv45z08g/0.jpg)](http://www.youtube.com/watch?v=_O6Bv45z08g)
 
 ## Key Features
 
